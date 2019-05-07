@@ -3,6 +3,8 @@
 #include<string.h>
 #include<errno.h>
 
+// Create a new node which has the specified `key' and `userdata'
+// Return NULL if failed
 static avlbst_p avlbst_new_node(const size_t key, void *userdata)
 {
 	avlbst_p n = calloc(1, sizeof *n);
@@ -12,17 +14,20 @@ static avlbst_p avlbst_new_node(const size_t key, void *userdata)
 	return n;
 }
 
+// Get the maximum value of two integers
 static int avlbst_max(const int a, const int b)
 {
 	return (a > b) ? a : b;
 }
 
+// Get the stored height value of the node
 static int avlbst_height(avlbst_p n)
 {
 	if(n) return n->height;
 	else return 0;
 }
 
+// Perform left rotation to a node
 static avlbst_p avlbst_rol(avlbst_p x)
 {
 	avlbst_p y = x->r_child;
@@ -37,6 +42,7 @@ static avlbst_p avlbst_rol(avlbst_p x)
 	return y;
 }
 
+// Perform right rotation to a node.
 static avlbst_p avlbst_ror(avlbst_p y)
 {
 	avlbst_p x = y->l_child;
@@ -51,17 +57,19 @@ static avlbst_p avlbst_ror(avlbst_p y)
 	return x;
 }
 
+// Get the balance factor of the node
 static int avlbst_get_balance(avlbst_p n)
 {
 	if(n) return avlbst_height(n->l_child) - avlbst_height(n->r_child);
 	else return 0;
 }
 
+// Call this function on insert to keep the tree balanced
 static avlbst_p avlbst_keep_balance_ins(avlbst_p n, size_t key)
 {
 	int balance = avlbst_get_balance(n);
 	
-	// If this node becomes unbalanced, then 
+	// If this node becomes unbalanced, then
     // there are 4 cases 
   
     // Left Left Case 
@@ -89,6 +97,7 @@ static avlbst_p avlbst_keep_balance_ins(avlbst_p n, size_t key)
 	return n;
 }
 
+// Insert data to the tree
 static avlbst_p avlbst_insert_recursive(avlbst_p n, size_t key, void *userdata)
 {
 	if(!n)
@@ -114,6 +123,7 @@ FailExit:
 	return NULL;
 }
 
+// The API of avlbst insertion
 int avlbst_insert(avlbst_p *ppavlbst, size_t key, void *userdata)
 {
 	avlbst_p n;
@@ -134,6 +144,7 @@ FailExit:
 	return 0;
 }
 
+// The API of avlbst search
 int avlbst_search(avlbst_p pavlbst, size_t key, avlbst_p *ppmatch)
 {
 	avlbst_p n;
@@ -157,6 +168,7 @@ NotFound:
 	return 0;
 }
 
+// Find a node in a tree that has the maximum key value
 size_t avlbst_find_max_key(avlbst_p pavlbst, avlbst_p *ppn)
 {
 	avlbst_p n = pavlbst;
@@ -170,6 +182,7 @@ size_t avlbst_find_max_key(avlbst_p pavlbst, avlbst_p *ppn)
 	return n->key;
 }
 
+// Find a node in a tree that has the minimum key value
 size_t avlbst_find_min_key(avlbst_p pavlbst, avlbst_p *ppn)
 {
 	avlbst_p n = pavlbst;
@@ -183,6 +196,7 @@ size_t avlbst_find_min_key(avlbst_p pavlbst, avlbst_p *ppn)
 	return n->key;
 }
 
+// Call this function on remove to keep the tree balanced
 static avlbst_p avlbst_keep_balance_rem(avlbst_p n)
 {
 	int balance = avlbst_get_balance(n);
@@ -215,6 +229,7 @@ static avlbst_p avlbst_keep_balance_rem(avlbst_p n)
 	return n;
 }
 
+// Remove data from the tree
 static avlbst_p avlbst_remove_recursive(avlbst_p r, size_t key, void(*on_free)(void *userdata))
 {
 	if(!r) return r;
@@ -255,6 +270,7 @@ static avlbst_p avlbst_remove_recursive(avlbst_p r, size_t key, void(*on_free)(v
 	return avlbst_keep_balance_rem(r);
 }
 
+// The API of avlbst remove
 int avlbst_remove(avlbst_p *ppavlbst, size_t key, void(*on_free)(void *userdata))
 {
 	if(!ppavlbst) goto InvalidParamExit;
@@ -268,6 +284,7 @@ FailExit:
 	return 0;
 }
 
+// Free a node and its child nodes
 static void avlbst_free_recursive(avlbst_p n, void(*on_free)(void *userdata))
 {
 	if(!n) return;
@@ -277,6 +294,7 @@ static void avlbst_free_recursive(avlbst_p n, void(*on_free)(void *userdata))
 	free(n);
 }
 
+// The API to free an avlbst
 void avlbst_free(avlbst_p *ppavlbst, void(*on_free)(void *userdata))
 {
 	if(ppavlbst)
@@ -285,3 +303,68 @@ void avlbst_free(avlbst_p *ppavlbst, void(*on_free)(void *userdata))
 		*ppavlbst = NULL;
 	}
 }
+
+// The API to clone an avlbst
+avlbst_p avlbst_clone(avlbst_p pavlbst)
+{
+	avlbst_p n;
+	if(!pavlbst) return pavlbst;
+
+	// Clone the node itself
+	n = avlbst_new_node(pavlbst->key, pavlbst->userdata);
+	if(!n) return n;
+	n->height = pavlbst->height;
+	// Then clone its childs recursively
+	// If any of the childs could not be cloned, the whole recursived function fails as documented behavior
+	if(pavlbst->l_child)
+	{
+		n->l_child = avlbst_clone(pavlbst->l_child);
+		if(!n->l_child)
+		{
+			free(n);
+			return NULL;
+		}
+	}
+	if(pavlbst->r_child)
+	{
+		n->r_child = avlbst_clone(pavlbst->r_child);
+		if(!n->r_child)
+		{
+			avlbst_free(&n, NULL);
+			return NULL;
+		}
+	}
+	return n;
+}
+
+// Move the store location in the memory of the nodes to perform defragment
+// Move them to a lower address by calling malloc() to get a new location,
+//   and check if the location is at a lower address, then copy the contents of the node.
+// 
+size_t avlbst_defrag(avlbst_p *ppavlbst)
+{
+	size_t sum = 0;
+	avlbst_p oldptr, newptr;
+	if(!ppavlbst) return 0;
+	oldptr = *ppavlbst;
+	if(!oldptr) return 0;
+	newptr = malloc(sizeof *newptr);
+	if (!newptr) return 0; // No more free memory, do nothing at this point.
+	if((size_t)newptr < (size_t)oldptr)
+	{
+		memcpy(newptr, oldptr, sizeof *newptr);
+		*ppavlbst = newptr;
+		free(oldptr);
+		sum = 1;
+	}
+	else
+	{
+		free(newptr);
+		newptr = oldptr;
+	}
+	sum += avlbst_defrag(&newptr->l_child);
+	sum += avlbst_defrag(&newptr->r_child);
+	return sum;
+}
+
+
