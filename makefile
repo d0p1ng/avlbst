@@ -5,14 +5,19 @@ RANLIB = $(GCC_PREFIX)gcc-ranlib
 OPTIMIZATIONS=-g -O3 -fdata-sections -ffunction-sections -fmerge-all-constants -flto -fuse-linker-plugin -ffat-lto-objects
 CFLAGS=-Wall $(OPTIMIZATIONS) -I.
 
-includes = $(wildcard *.h)
+OBJS=avlbst.o
 
-%.o: %.c ${includes}
-	$(CC) -c $(CFLAGS) -o $@ $<
+all: libavlbst.a
+
+-include $(OBJS:.o=.d)
+
+%.o: %.c
+	$(CC) -c $(CFLAGS) $*.c -o $*.o
+	$(CC) -MM $(CFLAGS) $*.c > $*.d
 	
-libavlbst.a: avlbst.o
+libavlbst.a: $(OBJS)
 	$(AR) rcu $@ $+
 	$(RANLIB) $@
 
 clean:
-	del *.o *.a
+	del *.o *.a *.d

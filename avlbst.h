@@ -83,3 +83,51 @@ int avlbst_remove(avlbst_p *ppavlbst, size_t key, void(*on_free)(void *userdata)
 //   on_free: A function pointer used to free the userdata, can be NULL.
 //-----------------------------------------------------------------------------
 void avlbst_free(avlbst_p *ppavlbst, void(*on_free)(void *userdata));
+
+//=============================================================================
+// Func: avlbst_clone
+// Desc: Clone the whole tree. Usually used in bucket sort algorithm.
+// Params:
+//   pavlbst: The root node of a tree to be cloned.
+// Return value:
+//   A pointer to the root node of the cloned AVL tree. If the function failed,
+//     the returned value is NULL and you can check out errno for further
+//     information.
+// Remarks:
+//   The `key' field and the `userdata' field were kept the same to the
+//     original tree. To free the cloned tree, call avlbst_free(). Please NOTE
+//     that if the `userdata' field were used as a pointer which referenced to
+//     your own data, you probably don't want the pointer to be double freed.
+//     So the second parameter of the function avlbst_free() which is `on_free'
+//     should be NULL at this point.
+//-----------------------------------------------------------------------------
+avlbst_p avlbst_clone(avlbst_p pavlbst);
+
+//=============================================================================
+// Func: avlbst_defrag
+// Desc: Perform the defragment to the avlbst to make the memory layout more
+//   compact by move the nodes to lower addresses, and collect the previously
+//   freed memory to a larger block which can contain larger data.
+// Return value:
+//    The count of the moved nodes.
+// Remarks:
+//   Using avlbst by frequently insert and remove nodes creates memory holes
+//     which only has the capacity to contain smaller memory blocks than an
+//     avlbst node. These small freed memory blocks cause memory management
+//     performance problems, and could not be used effectively since they are
+//     too small to contain larger data.
+//
+//   The defragment is performed by calling malloc() to try to get a lower
+//     address, then copy its contents to the new location, then free the
+//     previous memory block. if malloc() returns a higher address, the node
+//     will not be moved and the new memory block will be freed.
+//
+//   Not all platforms allocate memory from low to high addresses. If the
+//     current platform always allocates memory from the tail of the last
+//     allocated address, this function will not work at all. Calling this
+//     function at this point will only result in wasted performance.
+//
+//   Always do testing on your targeting platform to make sure you really need
+//     to call this function.
+//-----------------------------------------------------------------------------
+size_t avlbst_defrag(avlbst_p *ppavlbst);
