@@ -2,14 +2,21 @@
 
 #include<stdint.h>
 
+//=============================================================================
+// The structure of the AVL binary search tree node.
+// Do not modify any of the members except userdata by your own.
+// Manage the tree by calling the API functions.
+//-----------------------------------------------------------------------------
 typedef struct avlbst_struct avlbst_t, *avlbst_p;
 struct avlbst_struct
 {
 	size_t key;
-	void *userdata;
 	avlbst_p l_child; // The child who has a lesser key value
 	avlbst_p r_child; // The child who has a greater key value
+	avlbst_p prev; // Previous inserted
+	avlbst_p next; // Next inserted
 	int height;
+	void* userdata;
 };
 
 //=============================================================================
@@ -74,6 +81,26 @@ size_t avlbst_find_min_key(avlbst_p pavlbst, avlbst_p *ppn);
 //   zero.
 //-----------------------------------------------------------------------------
 int avlbst_remove(avlbst_p *ppavlbst, size_t key, void(*on_free)(void *userdata));
+
+//=============================================================================
+// Func: avlbst_first
+// Desc: Get the first inserted node of a whole tree
+// Params:
+//   pavlbst: The tree.
+// Return value:
+//   The first inserted node from the tree. Used to iterate the tree.
+//-----------------------------------------------------------------------------
+avlbst_p avlbst_first(avlbst_p pavlbst);
+
+//=============================================================================
+// Func: avlbst_last
+// Desc: Get the last inserted node of a whole tree
+// Params:
+//   pavlbst: The tree.
+// Return value:
+//   The last inserted node from the tree. Used to iterate the tree reverse.
+//-----------------------------------------------------------------------------
+avlbst_p avlbst_last(avlbst_p pavlbst);
 
 //=============================================================================
 // Func: avlbst_free

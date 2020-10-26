@@ -17,7 +17,7 @@ static avlbst_p avlbst_new_node(const size_t key, void *userdata)
 // Get the maximum value of two integers
 static int avlbst_max(const int a, const int b)
 {
-	return (a > b) ? a : b;
+	return a > b ? a : b;
 }
 
 // Get the stored height value of the node
@@ -100,9 +100,10 @@ static avlbst_p avlbst_keep_balance_ins(avlbst_p n, size_t key)
 // Insert data to the tree
 static avlbst_p avlbst_insert_recursive(avlbst_p n, size_t key, void *userdata)
 {
+	avlbst_p nn;
 	if(!n)
 	{
-		avlbst_p nn = avlbst_new_node(key, userdata);
+		nn = avlbst_new_node(key, userdata);
 		if(!nn) goto GenErrExit;
 		return nn;
 	}
@@ -116,7 +117,16 @@ static avlbst_p avlbst_insert_recursive(avlbst_p n, size_t key, void *userdata)
 	
 	n->height = avlbst_max(avlbst_height(n->l_child), avlbst_height(n->r_child)) + 1;
 
-	return avlbst_keep_balance_ins(n, key);
+	n = avlbst_keep_balance_ins(n, key);
+
+	nn = avlbst_last(n);
+	if (nn != n)
+	{
+		nn->next = n;
+		n->prev = nn;
+	}
+
+	return n;
 GenErrExit:
 	goto FailExit;
 FailExit:
@@ -253,6 +263,8 @@ static avlbst_p avlbst_remove_recursive(avlbst_p r, size_t key, void(*on_free)(v
 				if(on_free) on_free(r->userdata);
 				*r = *temp;
 			}
+			if (temp->prev) temp->prev->next = temp->next;
+			if (temp->next) temp->next->prev = temp->prev;
 			free(temp);
 		}
 		else
@@ -304,37 +316,51 @@ void avlbst_free(avlbst_p *ppavlbst, void(*on_free)(void *userdata))
 	}
 }
 
+// The API to get the first inserted node of the tree
+avlbst_p avlbst_first(avlbst_p pavlbst)
+{
+	avlbst_p pNode = pavlbst;
+	if (!pNode) return NULL;
+
+	while (pNode->prev) pNode = pNode->prev;
+	return pNode;
+}
+
+// The API to get the last inserted node of the tree
+avlbst_p avlbst_last(avlbst_p pavlbst)
+{
+	avlbst_p pNode = pavlbst;
+	if (!pNode) return NULL;
+
+	while (pNode->next) pNode = pNode->next;
+	return pNode;
+}
+
 // The API to clone an avlbst
 avlbst_p avlbst_clone(avlbst_p pavlbst)
 {
-	avlbst_p n;
+	avlbst_p root, i;
 	if(!pavlbst) return pavlbst;
 
-	// Clone the node itself
-	n = avlbst_new_node(pavlbst->key, pavlbst->userdata);
-	if(!n) return n;
-	n->height = pavlbst->height;
-	// Then clone its childs recursively
-	// If any of the childs could not be cloned, the whole recursived function fails as documented behavior
-	if(pavlbst->l_child)
+	root = avlbst_new_node(pavlbst->key, pavlbst->userdata);
+	if (!root) return root;
+
+	i = avlbst_first(pavlbst);
+	if (i == pavlbst)
 	{
-		n->l_child = avlbst_clone(pavlbst->l_child);
-		if(!n->l_child)
+		return root;
+	}
+
+	while (i->next)
+	{
+		i = i->next;
+		if (!avlbst_insert(&root, i->key, i->userdata))
 		{
-			free(n);
+			avlbst_free(&root, NULL);
 			return NULL;
 		}
 	}
-	if(pavlbst->r_child)
-	{
-		n->r_child = avlbst_clone(pavlbst->r_child);
-		if(!n->r_child)
-		{
-			avlbst_free(&n, NULL);
-			return NULL;
-		}
-	}
-	return n;
+	return root;
 }
 
 // Move the store location in the memory of the nodes to perform defragment
